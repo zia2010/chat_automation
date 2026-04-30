@@ -191,10 +191,10 @@ All 4 admin APIs complete:
 | 2 | Check active + usage | ✅ Done |
 | 3 | Load conversation | ✅ Done |
 | 4 | Build prompt | ✅ Done |
-| 5 | Call AI (mock) | ⬜ |
-| 6 | Save conversation | ⬜ |
-| 7 | Log usage | ⬜ |
-| 8 | Return response | ⬜ |
+| 5 | Call AI (mock) | ✅ Done |
+| 6 | Save conversation | ✅ Done |
+| 7 | Log usage | ✅ Done |
+| 8 | Return response | ✅ Done |
 
 ### Piece 1 — Validate API Key ✅
 
@@ -347,3 +347,93 @@ Same request — now response includes the built prompt:
   "prompt": "\nYou are a helpful sales assistant\n\nCompany Info:..."
 }
 ```
+
+### Piece 5 — Call AI (mock) ✅
+
+**File created:**
+- `src/services/mockAI.js` — fake AI that returns a dummy reply
+
+**What it does:**
+1. Takes the prompt (the big text block from Piece 4)
+2. Waits 200ms (simulates real AI delay)
+3. Returns a fake reply string
+
+**Why mock?**
+- Real AI costs money per call
+- While building, we test with fake responses
+- Later, swap `mockAI()` with OpenAI/Claude — nothing else changes!
+
+### Piece 6 — Save Conversation ✅
+
+**File created:**
+- `src/services/conversation.service.js` — get + save chat history
+
+**What it does:**
+1. Takes the old history + new user message + AI reply
+2. Combines into one array
+3. Saves to `conversations` table using upsert (update or insert)
+4. Trims to last 20 messages only
+
+**Why trim to 20?**
+- AI has input limits — too much text = errors
+- Saves DB space
+- 20 messages = enough context for smart replies
+
+### Piece 7 — Log Usage ✅
+
+**File created:**
+- `src/services/usage.service.js` — tracks API requests
+
+**What it does:**
+1. Inserts one row into `usage_logs` table
+2. Each row = one successful request
+3. Used by Piece 2 to check daily limits
+
+**Why log AFTER success?**
+- Only count requests that actually worked
+- Failed requests shouldn't count against the client
+
+### Piece 8 — Return Response ✅
+
+**What it does:**
+- Returns the AI reply to the client as JSON: `{ "reply": "..." }`
+
+---
+
+## 🎉 Webhook Pipeline Complete!
+
+**The full flow now works end-to-end:**
+
+```
+Client sends POST /webhook with x-api-key
+    ↓
+1. Validate API key → find client in DB
+2. Check is_active → check daily usage limit
+3. Load conversation history
+4. Build prompt (instructions + company data + history + message)
+5. Call AI → get reply
+6. Save conversation (user message + AI reply)
+7. Log usage (for daily limit tracking)
+8. Return reply to client
+```
+
+### Test the FULL pipeline:
+
+```
+POST http://localhost:3000/webhook
+Header: x-api-key: sk_live_your_client_key
+Body (JSON):
+{
+  "userId": "user_1",
+  "userLastMessage": "Hi, do you have discounts?"
+}
+```
+
+**Expected response:**
+```json
+{
+  "reply": "🤖 Mock reply based on: \"\\nYou are a helpful sales assistant\\n\\nCompan...\""
+}
+```
+
+**Try sending multiple messages** — the conversation will be saved and loaded each time!

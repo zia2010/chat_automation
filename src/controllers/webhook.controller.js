@@ -1,6 +1,9 @@
 import { getSupabase } from "../db/supabase.js";
 import { hashApiKey } from "../utils/hash.js";
 import { buildPrompt } from "../utils/promptBuilder.js";
+import { mockAI } from "../services/mockAI.js";
+import { saveConversation } from "../services/conversation.service.js";
+import { logUsage } from "../services/usage.service.js";
 
 /**
  * WEBHOOK HANDLER
@@ -12,6 +15,10 @@ import { buildPrompt } from "../utils/promptBuilder.js";
  * Piece 2 — Check active + usage
  * Piece 3 — Load conversation
  * Piece 4 — Build prompt
+ * Piece 5 — Call AI (mock)
+ * Piece 6 — Save conversation
+ * Piece 7 — Log usage
+ * Piece 8 — Return response
  * - Client sends their API key in the "x-api-key" header
  * - We hash it and look for a matching client in the DB
  * - If found → we know who this client is
@@ -132,16 +139,47 @@ export const webhookHandler = async (req, res) => {
     });
 
     // ✅ Piece 4 complete — prompt is ready for AI!
-    // Temporary response (will be replaced by next pieces)
-    return res.json({
-      message: "Prompt built",
+
+    // ===== PIECE 5: CALL AI (MOCK) =====
+
+    // Step 12: Send the prompt to AI and get a reply
+    // Right now this is a fake AI (mockAI)
+    // Later you can swap it with OpenAI, Claude, etc.
+    // The rest of the code stays EXACTLY the same!
+    const reply = await mockAI(prompt);
+
+    // ===== PIECE 6: SAVE CONVERSATION =====
+
+    // Step 13: Add the new messages to history
+    // We add both the user's message AND the AI's reply
+    // So next time, the AI knows what was said
+    const updatedMessages = [
+      ...history,                                    // all previous messages
+      { role: "user", text: userLastMessage },       // what user just said
+      { role: "assistant", text: reply }             // what AI just replied
+    ];
+
+    // Step 14: Save to database
+    // Uses upsert (update if exists, insert if new)
+    // Only keeps last 20 messages to prevent DB overload
+    await saveConversation({
       clientId: client.id,
       userId,
-      usageToday: count,
-      limit: client.allowed_tokens,
-      historyLength: history.length,
-      prompt
+      messages: updatedMessages
     });
+
+    // ===== PIECE 7: LOG USAGE =====
+
+    // Step 15: Record that this client made a request
+    // Why? So we can count daily usage (Piece 2 checks this)
+    // One row in usage_logs = one successful request
+    await logUsage(client.id);
+
+    // ===== PIECE 8: RETURN RESPONSE =====
+
+    // Step 16: Send the AI reply back to the client
+    // This is what ManyChat / WhatsApp / their system receives
+    return res.json({ reply });
 
   } catch (err) {
     return res.status(500).json({ error: err.message });
