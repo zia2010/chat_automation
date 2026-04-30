@@ -1,4 +1,6 @@
 import { getSupabase } from "../db/supabase.js";
+import { generateApiKey } from "../utils/apiKey.js";
+import { hashApiKey } from "../utils/hash.js";
 
 /**
  * CREATE CLIENT
@@ -47,6 +49,53 @@ export const createClient = async (req, res) => {
 
   } catch (err) {
     // If anything goes wrong, send a 500 error
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+
+/**
+ * GENERATE API KEY
+ *
+ * What this does:
+ * - Takes a clientId from request body
+ * - Generates a random API key (sk_live_xxx)
+ * - Hashes the key (so we never store the raw version)
+ * - Saves the hash in the client's row in the DB
+ * - Returns the raw key to admin (only shown once!)
+ *
+ * Why:
+ * - The client needs this key to call your webhook
+ * - You only store the hash for security
+ * - If they lose the key, you generate a new one (old one stops working)
+ */
+export const generateApiKeyHandler = async (req, res) => {
+  try {
+    // Step 1: Get clientId from request body
+    const { clientId } = req.body;
+
+    if (!clientId) {
+      return res.status(400).json({ error: "clientId is required" });
+    }
+
+    // Step 2: Generate a new random API key
+    const apiKey = generateApiKey();
+
+    // Step 3: Hash it (this is what we store in DB)
+    const hash = hashApiKey(apiKey);
+
+    // Step 4: Update the client's row with the hashed key
+    const { error } = await getSupabase()
+      .from("clients")
+      .update({ api_key_hash: hash })
+      .eq("id", clientId);
+
+    if (error) throw error;
+
+    // Step 5: Return the raw key (shown only once!)
+    return res.json({ apiKey });
+
+  } catch (err) {
     return res.status(500).json({ error: err.message });
   }
 };

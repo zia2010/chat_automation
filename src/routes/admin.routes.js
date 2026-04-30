@@ -1,7 +1,7 @@
 import express from "express";
 import { validateAdmin } from "../middleware/adminAuth.js";
 import { getSupabase } from "../db/supabase.js";
-import { createClient } from "../controllers/admin.controller.js";
+import { createClient, generateApiKeyHandler } from "../controllers/admin.controller.js";
 
 const router = express.Router();
 
@@ -28,5 +28,8 @@ router.get("/admin/db-check", validateAdmin, async (req, res) => {
 
 // CREATE CLIENT — adds a new client to the database
 router.post("/admin/clients", validateAdmin, createClient);
+
+// GENERATE API KEY — creates a secure key for a client
+router.post("/admin/api-key", validateAdmin, generateApiKeyHandler);
 
 export default router;

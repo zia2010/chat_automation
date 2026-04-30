@@ -66,3 +66,53 @@ GET http://localhost:3000/admin/auth-check
 Header: x-admin-key: your_super_secret_key
 → 200 { "status": "ok", "message": "Admin authenticated" }
 ```
+
+---
+
+## Step 3 — Admin CRUD APIs (in progress)
+
+**Date:** 2026-05-01
+
+### Done:
+
+- [x] `POST /admin/clients` — Create a new client
+- [x] `POST /admin/api-key` — Generate API key for a client
+
+### Files created:
+
+- `src/utils/apiKey.js` — generates random API key (sk_live_xxx)
+- `src/utils/hash.js` — hashes API key with SHA-256
+- `src/controllers/admin.controller.js` — createClient + generateApiKeyHandler
+
+### Test in Thunder Client:
+
+**1. Create a client first:**
+```
+POST http://localhost:3000/admin/clients
+Header: x-admin-key: your_super_secret_key
+Body (JSON):
+{
+  "name": "Demo Brand",
+  "email": "demo@mail.com",
+  "allowed_tokens": 1000,
+  "prompt": "You are a helpful sales assistant",
+  "company_data": { "offers": "10% off first order" }
+}
+```
+→ Copy the `id` from the response
+
+**2. Generate API key for that client:**
+```
+POST http://localhost:3000/admin/api-key
+Header: x-admin-key: your_super_secret_key
+Body (JSON):
+{
+  "clientId": "paste-the-id-from-step-1"
+}
+```
+→ Returns `{ "apiKey": "sk_live_..." }` (save this! shown only once)
+
+### Still TODO:
+
+- [ ] `PUT /admin/clients/:clientId` — Update client
+- [ ] `DELETE /admin/clients/:clientId` — Delete client
