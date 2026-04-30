@@ -175,7 +175,7 @@ export const webhookHandler = async (req, res) => {
     // Step 15: Record that this client made a request
     // Why? So we can count daily usage (Piece 2 checks this)
     // One row in usage_logs = one successful request
-    await logUsage(client.id);
+    await logUsage(client.id, userId);
 
     // ===== PIECE 8: RETURN RESPONSE =====
 

@@ -16,10 +16,11 @@ import { getSupabase } from "../db/supabase.js";
  * - Only count requests that actually worked
  * - If AI fails or something breaks, don't charge the client
  */
-export const logUsage = async (clientId) => {
+export const logUsage = async (clientId, userId) => {
   await getSupabase()
     .from("usage_logs")
     .insert({
-      client_id: clientId
+      client_id: clientId,
+      user_id: userId
     });
 };
