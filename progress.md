@@ -176,3 +176,55 @@ All 4 admin APIs complete:
 
 - [x] Add admin CRUD APIs
 - [ ] Add webhook pipeline (client-facing AI chat)
+
+---
+
+## Step 4 — Webhook Pipeline (building piece by piece)
+
+**Date:** 2026-05-01
+
+### Webhook Pieces Tracker:
+
+| # | Piece | Status |
+|---|-------|--------|
+| 1 | Validate API key | ✅ Done |
+| 2 | Check active + usage | ⬜ |
+| 3 | Load conversation | ⬜ |
+| 4 | Build prompt | ⬜ |
+| 5 | Call AI (mock) | ⬜ |
+| 6 | Save conversation | ⬜ |
+| 7 | Log usage | ⬜ |
+| 8 | Return response | ⬜ |
+
+### Piece 1 — Validate API Key ✅
+
+**Files created:**
+- `src/controllers/webhook.controller.js` — webhook handler (piece 1)
+
+**Files updated:**
+- `src/routes/webhook.routes.js` — added `POST /webhook` route
+
+**What it does:**
+1. Reads `x-api-key` from header
+2. Reads `userId` + `userLastMessage` from body
+3. Hashes the key with SHA-256
+4. Looks up client in DB by matching hash
+5. If match → client verified. If not → 401 rejected
+
+**Test in Thunder Client:**
+
+```
+POST http://localhost:3000/webhook
+Header: x-api-key: sk_live_your_client_key_here
+Body (JSON):
+{
+  "userId": "user_1",
+  "userLastMessage": "Hi there"
+}
+```
+
+| Scenario | Response |
+|----------|----------|
+| No x-api-key header | 401 `{ "error": "Missing API key" }` |
+| Wrong key | 401 `{ "error": "Invalid API key" }` |
+| Correct key | 200 `{ "message": "API key valid", "clientId": "...", "clientName": "..." }` |
