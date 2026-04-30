@@ -188,7 +188,7 @@ All 4 admin APIs complete:
 | # | Piece | Status |
 |---|-------|--------|
 | 1 | Validate API key | ✅ Done |
-| 2 | Check active + usage | ⬜ |
+| 2 | Check active + usage | ✅ Done |
 | 3 | Load conversation | ⬜ |
 | 4 | Build prompt | ⬜ |
 | 5 | Call AI (mock) | ⬜ |
@@ -228,3 +228,44 @@ Body (JSON):
 | No x-api-key header | 401 `{ "error": "Missing API key" }` |
 | Wrong key | 401 `{ "error": "Invalid API key" }` |
 | Correct key | 200 `{ "message": "API key valid", "clientId": "...", "clientName": "..." }` |
+
+### Piece 2 — Check Active + Usage ✅
+
+**What it does:**
+1. Checks if `client.is_active` is true → if false → 403 "Client is disabled"
+2. Counts today's usage from `usage_logs` table
+3. Compares count with `client.allowed_tokens` → if over limit → 429 "Daily usage limit exceeded"
+
+**Why do this BEFORE AI call?**
+- No point calling AI (which costs money) if the client is disabled or over limit
+- This saves you money by rejecting early
+
+**How the usage count works:**
+```
+Get today's date → "2026-05-01"
+    ↓
+Count rows in usage_logs where:
+  client_id = this client
+  AND created_at >= today
+    ↓
+If count >= allowed_tokens → reject
+```
+
+**Test in Thunder Client:**
+
+Same request as Piece 1:
+```
+POST http://localhost:3000/webhook
+Header: x-api-key: sk_live_your_client_key_here
+Body (JSON):
+{
+  "userId": "user_1",
+  "userLastMessage": "Hi there"
+}
+```
+
+| Scenario | Response |
+|----------|----------|
+| Client disabled (is_active=false) | 403 `{ "error": "Client is disabled" }` |
+| Over daily limit | 429 `{ "error": "Daily usage limit exceeded" }` |
+| Active + under limit | 200 `{ "message": "Client verified and under limit", "usageToday": 0, "limit": 1000 }` |

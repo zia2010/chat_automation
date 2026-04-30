@@ -5,9 +5,10 @@ import { hashApiKey } from "../utils/hash.js";
  * WEBHOOK HANDLER
  *
  * This is the API your clients (customers) call to get AI replies.
- * We're building it step by step. Right now: Piece 1 only.
+ * We're building it step by step.
  *
- * Piece 1 — Validate API Key:
+ * Piece 1 — Validate API Key
+ * Piece 2 — Check active + usage
  * - Client sends their API key in the "x-api-key" header
  * - We hash it and look for a matching client in the DB
  * - If found → we know who this client is
@@ -52,13 +53,46 @@ export const webhookHandler = async (req, res) => {
       return res.status(401).json({ error: "Invalid API key" });
     }
 
-    // ✅ Piece 1 complete — client is verified!
-    // For now, return the client info to confirm it's working
-    // (We'll replace this response as we add more pieces)
+    // ===== PIECE 2: CHECK ACTIVE + USAGE =====
+
+    // Step 7: Check if client is active
+    // Why? Admin can disable a client (is_active = false)
+    // A disabled client should not be able to use the webhook
+    if (!client.is_active) {
+      return res.status(403).json({ error: "Client is disabled" });
+    }
+
+    // Step 8: Check daily usage limit
+    // Why? Each client has a max number of requests per day (allowed_tokens)
+    // We count how many requests they've made today
+    // If they've hit the limit → reject (saves your AI costs!)
+
+    // Get today's date in YYYY-MM-DD format
+    // .toISOString() = "2026-05-01T12:00:00.000Z"
+    // .slice(0, 10)  = "2026-05-01"
+    const today = new Date().toISOString().slice(0, 10);
+
+    // Count rows in usage_logs for this client where created_at >= today
+    // { count: "exact", head: true } = just give me the count, not the actual rows
+    const { count } = await getSupabase()
+      .from("usage_logs")
+      .select("*", { count: "exact", head: true })
+      .eq("client_id", client.id)
+      .gte("created_at", today);
+
+    // If count has reached or exceeded the limit → reject
+    if (count >= client.allowed_tokens) {
+      return res.status(429).json({ error: "Daily usage limit exceeded" });
+    }
+
+    // ✅ Piece 2 complete — client is active and under limit!
+    // Temporary response (will be replaced by next pieces)
     return res.json({
-      message: "API key valid",
+      message: "Client verified and under limit",
       clientId: client.id,
-      clientName: client.name
+      clientName: client.name,
+      usageToday: count,
+      limit: client.allowed_tokens
     });
 
   } catch (err) {
