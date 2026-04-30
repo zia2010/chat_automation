@@ -66,3 +66,7 @@ GET http://localhost:3000/admin/auth-check
 Header: x-admin-key: your_super_secret_key
 → 200 { "status": "ok", "message": "Admin authenticated" }
 ```
+
+ADMIN_SECRET=your_super_secret_key
+SUPABASE_URL=https://mhwdassapzwmzyfyyotb.supabase.co
+SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1od2Rhc3NhcHp3bXp5Znl5b3RiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NDk5NTYsImV4cCI6MjA5MzEyNTk1Nn0.ebc11eiXMdl_Wp8U3Y4iAFhwA0BewXMQpQnSuzwfYsA
