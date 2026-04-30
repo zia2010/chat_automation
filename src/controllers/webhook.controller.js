@@ -1,5 +1,6 @@
 import { getSupabase } from "../db/supabase.js";
 import { hashApiKey } from "../utils/hash.js";
+import { buildPrompt } from "../utils/promptBuilder.js";
 
 /**
  * WEBHOOK HANDLER
@@ -10,6 +11,7 @@ import { hashApiKey } from "../utils/hash.js";
  * Piece 1 — Validate API Key
  * Piece 2 — Check active + usage
  * Piece 3 — Load conversation
+ * Piece 4 — Build prompt
  * - Client sends their API key in the "x-api-key" header
  * - We hash it and look for a matching client in the DB
  * - If found → we know who this client is
@@ -113,13 +115,32 @@ export const webhookHandler = async (req, res) => {
     const history = conversation?.messages || [];
 
     // ✅ Piece 3 complete — we have the chat history!
+
+    // ===== PIECE 4: BUILD PROMPT =====
+
+    // Step 11: Combine everything into one text block for AI
+    // Why? AI needs ALL context in one go:
+    //   - What role to play (prompt)
+    //   - What the company does (company_data)
+    //   - What was said before (history)
+    //   - What the user just said (userLastMessage)
+    const prompt = buildPrompt({
+      prompt: client.prompt,
+      companyData: client.company_data,
+      history,
+      message: userLastMessage
+    });
+
+    // ✅ Piece 4 complete — prompt is ready for AI!
     // Temporary response (will be replaced by next pieces)
     return res.json({
-      message: "Conversation loaded",
+      message: "Prompt built",
       clientId: client.id,
       userId,
+      usageToday: count,
+      limit: client.allowed_tokens,
       historyLength: history.length,
-      history
+      prompt
     });
 
   } catch (err) {

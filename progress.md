@@ -190,7 +190,7 @@ All 4 admin APIs complete:
 | 1 | Validate API key | ✅ Done |
 | 2 | Check active + usage | ✅ Done |
 | 3 | Load conversation | ✅ Done |
-| 4 | Build prompt | ⬜ |
+| 4 | Build prompt | ✅ Done |
 | 5 | Call AI (mock) | ⬜ |
 | 6 | Save conversation | ⬜ |
 | 7 | Log usage | ⬜ |
@@ -308,5 +308,42 @@ Expected (new user):
   "userId": "user_1",
   "historyLength": 0,
   "history": []
+}
+```
+
+### Piece 4 — Build Prompt ✅
+
+**File created:**
+- `src/utils/promptBuilder.js` — combines all context into one text for AI
+
+**What it does:**
+1. Takes the client's `prompt` (e.g., "You are a sales assistant")
+2. Takes `company_data` (e.g., { offers: "10% off" })
+3. Takes `history` (previous messages)
+4. Takes `userLastMessage` (what user just said)
+5. Combines them into one big text block
+
+**Example output:**
+```
+You are a sales assistant
+
+Company Info:
+{"offers":"10% off"}
+
+Conversation:
+Customer: Hi
+Assistant: Hello!
+
+Customer: Do you have discounts?
+Reply:
+```
+
+**Test in Thunder Client:**
+
+Same request — now response includes the built prompt:
+```json
+{
+  "message": "Prompt built",
+  "prompt": "\nYou are a helpful sales assistant\n\nCompany Info:..."
 }
 ```
