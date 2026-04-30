@@ -146,7 +146,9 @@ export const webhookHandler = async (req, res) => {
     // Right now this is a fake AI (mockAI)
     // Later you can swap it with OpenAI, Claude, etc.
     // The rest of the code stays EXACTLY the same!
+    const aiStart = Date.now();
     const reply = await mockAI(prompt);
+    const aiResponseTime = Date.now() - aiStart;
 
     // ===== PIECE 6: SAVE CONVERSATION =====
 
@@ -179,7 +181,19 @@ export const webhookHandler = async (req, res) => {
 
     // Step 16: Send the AI reply back to the client
     // This is what ManyChat / WhatsApp / their system receives
-    return res.json({ reply });
+    return res.json({
+      message: "Conversation loaded",
+      clientId: client.id,
+      userId,
+      usageToday: count,
+      limit: client.allowed_tokens,
+      history,
+      reply,
+      messagesUpdated: true,
+      usageUpdated: true,
+      aiResponse: true,
+      aiResponseTime: `${aiResponseTime}ms`
+    });
 
   } catch (err) {
     return res.status(500).json({ error: err.message });
