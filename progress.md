@@ -114,5 +114,56 @@ Body (JSON):
 
 ### Still TODO:
 
-- [ ] `PUT /admin/clients/:clientId` — Update client
-- [ ] `DELETE /admin/clients/:clientId` — Delete client
+- [x] `PUT /admin/clients/:clientId` — Update client
+- [x] `DELETE /admin/clients/:clientId` — Delete client
+
+### Test Update Client:
+
+**What it does:** Change a client's settings (token limit, prompt, active status)
+
+**Allowed fields to update:** `allowed_tokens`, `prompt`, `company_data`, `is_active`
+**Cannot update:** `id`, `name`, `email` (for safety)
+
+```
+PUT http://localhost:3000/admin/clients/<paste-client-id-here>
+Header: x-admin-key: your_super_secret_key
+Body (JSON):
+{
+  "allowed_tokens": 5000,
+  "is_active": true,
+  "prompt": "You are a friendly customer support agent"
+}
+```
+→ Returns the full updated client object
+
+---
+
+### Test Delete Client:
+
+**What it does:** Permanently removes a client + their conversations + usage logs
+
+```
+DELETE http://localhost:3000/admin/clients/<paste-client-id-here>
+Header: x-admin-key: your_super_secret_key
+```
+→ Returns `{ "message": "Client deleted successfully" }`
+
+⚠️ This is permanent — no undo!
+
+---
+
+## Step 3 — Admin CRUD APIs ✅
+
+All 4 admin APIs complete:
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| POST | /admin/clients | Create new client |
+| POST | /admin/api-key | Generate API key |
+| PUT | /admin/clients/:id | Update client config |
+| DELETE | /admin/clients/:id | Delete client + data |
+
+### Next Steps:
+
+- [x] Add admin CRUD APIs
+- [ ] Add webhook pipeline (client-facing AI chat)

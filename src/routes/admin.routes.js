@@ -1,7 +1,7 @@
 import express from "express";
 import { validateAdmin } from "../middleware/adminAuth.js";
 import { getSupabase } from "../db/supabase.js";
-import { createClient, generateApiKeyHandler } from "../controllers/admin.controller.js";
+import { createClient, generateApiKeyHandler, updateClient, deleteClient } from "../controllers/admin.controller.js";
 
 const router = express.Router();
 
@@ -31,5 +31,11 @@ router.post("/admin/clients", validateAdmin, createClient);
 
 // GENERATE API KEY — creates a secure key for a client
 router.post("/admin/api-key", validateAdmin, generateApiKeyHandler);
+
+// UPDATE CLIENT — change client config (tokens, prompt, etc.)
+router.put("/admin/clients/:clientId", validateAdmin, updateClient);
+
+// DELETE CLIENT — remove a client and their data permanently
+router.delete("/admin/clients/:clientId", validateAdmin, deleteClient);
 
 export default router;
