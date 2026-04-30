@@ -9,6 +9,7 @@ import { hashApiKey } from "../utils/hash.js";
  *
  * Piece 1 — Validate API Key
  * Piece 2 — Check active + usage
+ * Piece 3 — Load conversation
  * - Client sends their API key in the "x-api-key" header
  * - We hash it and look for a matching client in the DB
  * - If found → we know who this client is
@@ -85,14 +86,40 @@ export const webhookHandler = async (req, res) => {
       return res.status(429).json({ error: "Daily usage limit exceeded" });
     }
 
-    // ✅ Piece 2 complete — client is active and under limit!
+    // ===== PIECE 3: LOAD CONVERSATION =====
+
+    // Step 9: Get existing chat history for this user
+    // Why? AI needs to know what was said before to give relevant replies
+    // Each conversation is stored per client_id + user_id pair
+    //
+    // Example: client "Demo Brand" + user "user_1" = one conversation
+    //          client "Demo Brand" + user "user_2" = separate conversation
+
+    // Query the conversations table
+    // .eq("client_id", client.id) = this client's conversations only
+    // .eq("user_id", userId) = this specific user's conversation
+    // .single() = expect one row (or null if first time)
+    const { data: conversation } = await getSupabase()
+      .from("conversations")
+      .select("*")
+      .eq("client_id", client.id)
+      .eq("user_id", userId)
+      .single();
+
+    // Step 10: Extract messages array
+    // If this is a brand new user (no conversation yet) → start with empty array
+    // conversation?.messages = if conversation exists, get .messages, else undefined
+    // || [] = if undefined, use empty array
+    const history = conversation?.messages || [];
+
+    // ✅ Piece 3 complete — we have the chat history!
     // Temporary response (will be replaced by next pieces)
     return res.json({
-      message: "Client verified and under limit",
+      message: "Conversation loaded",
       clientId: client.id,
-      clientName: client.name,
-      usageToday: count,
-      limit: client.allowed_tokens
+      userId,
+      historyLength: history.length,
+      history
     });
 
   } catch (err) {

@@ -189,7 +189,7 @@ All 4 admin APIs complete:
 |---|-------|--------|
 | 1 | Validate API key | ✅ Done |
 | 2 | Check active + usage | ✅ Done |
-| 3 | Load conversation | ⬜ |
+| 3 | Load conversation | ✅ Done |
 | 4 | Build prompt | ⬜ |
 | 5 | Call AI (mock) | ⬜ |
 | 6 | Save conversation | ⬜ |
@@ -269,3 +269,44 @@ Body (JSON):
 | Client disabled (is_active=false) | 403 `{ "error": "Client is disabled" }` |
 | Over daily limit | 429 `{ "error": "Daily usage limit exceeded" }` |
 | Active + under limit | 200 `{ "message": "Client verified and under limit", "usageToday": 0, "limit": 1000 }` |
+
+### Piece 3 — Load Conversation ✅
+
+**What it does:**
+1. Queries `conversations` table using `client_id` + `user_id`
+2. If conversation exists → gets the `messages` array (chat history)
+3. If new user (no conversation yet) → uses empty array `[]`
+
+**Why?**
+- AI needs previous messages to give context-aware replies
+- Each user has their own separate conversation per client
+
+**How it works:**
+```
+client_id = "abc" + user_id = "user_1"
+    ↓
+Look up in conversations table
+    ↓
+Found? → messages = [{role: "user", text: "Hi"}, ...]
+Not found? → messages = []
+```
+
+**Test in Thunder Client:**
+
+Same request:
+```
+POST http://localhost:3000/webhook
+Header: x-api-key: sk_live_your_key
+Body: { "userId": "user_1", "userLastMessage": "Hi there" }
+```
+
+Expected (new user):
+```json
+{
+  "message": "Conversation loaded",
+  "clientId": "...",
+  "userId": "user_1",
+  "historyLength": 0,
+  "history": []
+}
+```
