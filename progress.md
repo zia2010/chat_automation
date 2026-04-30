@@ -120,6 +120,7 @@ Body (JSON):
 ### Test Update Client:
 
 **What it does:** Change a client's settings (token limit, prompt, active status)
+**Requires:** client's `apiKey` in body (must match the one stored in DB)
 
 **Allowed fields to update:** `allowed_tokens`, `prompt`, `company_data`, `is_active`
 **Cannot update:** `id`, `name`, `email` (for safety)
@@ -129,24 +130,32 @@ PUT http://localhost:3000/admin/clients/<paste-client-id-here>
 Header: x-admin-key: your_super_secret_key
 Body (JSON):
 {
+  "apiKey": "sk_live_your_client_key_here",
   "allowed_tokens": 5000,
   "is_active": true,
   "prompt": "You are a friendly customer support agent"
 }
 ```
 → Returns the full updated client object
+→ If wrong apiKey → 401 "API key does not match this client"
 
 ---
 
 ### Test Delete Client:
 
 **What it does:** Permanently removes a client + their conversations + usage logs
+**Requires:** client's `apiKey` in body (must match the one stored in DB)
 
 ```
 DELETE http://localhost:3000/admin/clients/<paste-client-id-here>
 Header: x-admin-key: your_super_secret_key
+Body (JSON):
+{
+  "apiKey": "sk_live_your_client_key_here"
+}
 ```
 → Returns `{ "message": "Client deleted successfully" }`
+→ If wrong apiKey → 401 "API key does not match this client"
 
 ⚠️ This is permanent — no undo!
 

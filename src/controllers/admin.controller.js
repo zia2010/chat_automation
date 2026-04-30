@@ -125,11 +125,44 @@ export const updateClient = async (req, res) => {
     // Step 1: Get clientId from URL params
     const { clientId } = req.params;
 
-    // Step 2: Get only the fields we ALLOW to be updated
+    // Step 2: Get the apiKey from request body
+    // Why? Extra safety — ensures admin is targeting the right client
+    const { apiKey } = req.body;
+
+    if (!apiKey) {
+      return res.status(400).json({ error: "apiKey is required" });
+    }
+
+    // Step 3: Check if client exists in DB
+    const { data: existing } = await getSupabase()
+      .from("clients")
+      .select("id, api_key_hash")
+      .eq("id", clientId)
+      .single();
+
+    if (!existing) {
+      return res.status(404).json({ error: "Client not found" });
+    }
+
+    // Step 4: Verify client has an API key assigned
+    if (!existing.api_key_hash) {
+      return res.status(400).json({ error: "Client has no API key assigned" });
+    }
+
+    // Step 5: Hash the provided apiKey and compare with DB
+    // Why? We never store raw keys — so we hash what admin sent
+    //       and compare with the hash in the database
+    const hashedInput = hashApiKey(apiKey);
+
+    if (hashedInput !== existing.api_key_hash) {
+      return res.status(401).json({ error: "API key does not match this client" });
+    }
+
+    // Step 6: Get only the fields we ALLOW to be updated
     // Even if someone sends "id" or "name" in body, we ignore it
     const { allowed_tokens, prompt, company_data, is_active } = req.body;
 
-    // Step 3: Build an updates object with only provided fields
+    // Step 5: Build an updates object with only provided fields
     // Why? We don't want to overwrite fields with "undefined"
     const updates = {};
     if (allowed_tokens !== undefined) updates.allowed_tokens = allowed_tokens;
@@ -137,16 +170,12 @@ export const updateClient = async (req, res) => {
     if (company_data !== undefined) updates.company_data = company_data;
     if (is_active !== undefined) updates.is_active = is_active;
 
-    // Step 4: If nothing was provided to update, reject
+    // Step 6: If nothing was provided to update, reject
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ error: "No valid fields to update" });
     }
 
-    // Step 5: Update the row in the database
-    // .update(updates) = change these columns
-    // .eq("id", clientId) = only where id matches
-    // .select() = return the updated row
-    // .single() = we expect exactly 1 row
+    // Step 7: Update the row in the database
     const { data, error } = await getSupabase()
       .from("clients")
       .update(updates)
@@ -156,7 +185,7 @@ export const updateClient = async (req, res) => {
 
     if (error) throw error;
 
-    // Step 6: Return updated client
+    // Step 8: Return updated client
     return res.json({ client: data });
 
   } catch (err) {
@@ -187,19 +216,49 @@ export const deleteClient = async (req, res) => {
     // Step 1: Get clientId from URL params
     const { clientId } = req.params;
 
-    // Step 2: Delete related conversations (cleanup)
+    // Step 2: Get the apiKey from request body
+    const { apiKey } = req.body;
+
+    if (!apiKey) {
+      return res.status(400).json({ error: "apiKey is required" });
+    }
+
+    // Step 3: Check if client exists in DB
+    const { data: existing } = await getSupabase()
+      .from("clients")
+      .select("id, api_key_hash")
+      .eq("id", clientId)
+      .single();
+
+    if (!existing) {
+      return res.status(404).json({ error: "Client not found" });
+    }
+
+    // Step 4: Verify client has an API key assigned
+    if (!existing.api_key_hash) {
+      return res.status(400).json({ error: "Client has no API key assigned" });
+    }
+
+    // Step 5: Hash the provided apiKey and compare with DB
+    const hashedInput = hashApiKey(apiKey);
+
+    if (hashedInput !== existing.api_key_hash) {
+      return res.status(401).json({ error: "API key does not match this client" });
+    }
+
+    // Step 6: Delete related conversations (cleanup)
     await getSupabase()
       .from("conversations")
       .delete()
       .eq("client_id", clientId);
 
-    // Step 3: Delete related usage logs (cleanup)
+    // Step 5: Delete related usage logs (cleanup)
     await getSupabase()
       .from("usage_logs")
       .delete()
       .eq("client_id", clientId);
 
-    // Step 4: Delete the client itself
+    // Step 6: Delete the client itself
     const { error } = await getSupabase()
       .from("clients")
       .delete()
@@ -207,7 +266,7 @@ export const deleteClient = async (req, res) => {
 
     if (error) throw error;
 
-    // Step 5: Confirm deletion
+    // Step 7: Confirm deletion
     return res.json({ message: "Client deleted successfully" });
 
   } catch (err) {
