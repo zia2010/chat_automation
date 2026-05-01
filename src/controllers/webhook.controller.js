@@ -1,7 +1,7 @@
 import { getSupabase } from "../db/supabase.js";
 import { hashApiKey } from "../utils/hash.js";
 import { buildPrompt } from "../utils/promptBuilder.js";
-import { mockAI } from "../providers/mock.provider.js";
+import { generateAIResponse } from "../services/ai.service.js";
 import { saveConversation } from "../services/conversation.service.js";
 import { logUsage } from "../services/usage.service.js";
 
@@ -140,14 +140,15 @@ export const webhookHandler = async (req, res) => {
 
     // ✅ Piece 4 complete — prompt is ready for AI!
 
-    // ===== PIECE 5: CALL AI (MOCK) =====
+    // ===== PIECE 5: CALL AI =====
 
-    // Step 12: Send the prompt to AI and get a reply
-    // Right now this is a fake AI (mockAI)
-    // Later you can swap it with OpenAI, Claude, etc.
-    // The rest of the code stays EXACTLY the same!
+    // Step 12: Send the prompt to AI Service and get a reply
+    // AI Service reads AI_PROVIDER from .env and picks the right provider
+    // mock → free fake replies (for testing)
+    // gemini → real AI replies (for production)
+    // You NEVER need to change this line — just change .env!
     const aiStart = Date.now();
-    const reply = await mockAI(prompt);
+    const reply = await generateAIResponse({ prompt });
     const aiResponseTime = Date.now() - aiStart;
 
     // ===== PIECE 6: SAVE CONVERSATION =====

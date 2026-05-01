@@ -450,10 +450,10 @@ Body (JSON):
 |---|------|--------|
 | 1 | Create providers folder + move mock AI | ✅ Done |
 | 2 | Add AI_PROVIDER to .env | ✅ Done |
-| 3 | Create AI Service (orchestrator) | ⬜ |
-| 4 | Update webhook to use AI Service | ⬜ |
-| 5 | Test with mock provider | ⬜ |
-| 6 | Install axios | ⬜ |
+| 3 | Create AI Service (orchestrator) | ✅ Done |
+| 4 | Update webhook to use AI Service | ✅ Done |
+| 5 | Test with mock provider | ✅ Done |
+| 6 | Install axios | ✅ Done |
 | 7 | Create Gemini provider | ⬜ |
 | 8 | Create AI Health Service | ⬜ |
 | 9 | Add startup health check in server.js | ⬜ |
@@ -485,3 +485,58 @@ GEMINI_API_KEY=your_gemini_key
 - `AI_PROVIDER=mock` → uses fake AI (free, for testing)
 - `AI_PROVIDER=gemini` → uses real Gemini AI (costs money)
 - Switch by changing one line in .env
+
+### Step 3 — Create AI Service (Orchestrator) ✅
+
+**File created:**
+- `src/services/ai.service.js`
+
+**What it does:**
+1. Reads `AI_PROVIDER` from `.env` (default: "mock")
+2. Looks up the provider function from a PROVIDERS map
+3. Calls it with the prompt
+4. Returns the response
+5. If AI crashes → returns friendly fallback: "Hey! We'll get back to you shortly"
+
+**How PROVIDERS map works:**
+```
+PROVIDERS = {
+  mock: mockAI,        ← currently active
+  gemini: geminiProvider  ← added later
+}
+```
+`.env` says `AI_PROVIDER=mock` → picks `PROVIDERS["mock"]` → calls `mockAI()`
+
+### Step 4 — Update Webhook to Use AI Service ✅
+
+**What changed:**
+- Webhook no longer imports `mockAI` directly
+- Now imports `generateAIResponse` from `ai.service.js`
+- Changed `await mockAI(prompt)` → `await generateAIResponse({ prompt })`
+
+**Why this matters:**
+```
+BEFORE: webhook → mockAI (hardcoded)
+AFTER:  webhook → AI Service → picks provider from .env
+```
+You never touch webhook code again to switch AI providers!
+
+### Step 5 — Test with Mock Provider ✅
+
+**How to verify:**
+1. Restart server: `node src/server.js`
+2. Hit webhook with same request as before
+3. If you get `🤖 Mock reply...` → AI Service is routing to mock correctly
+
+**What confirms it works:**
+- Mock reply appears = AI Service picked `mock` from `.env`
+- No code change in webhook = abstraction is working
+
+### Step 6 — Install Axios ✅
+
+**Command:** `npm install axios`
+
+**Why?**
+- Axios is a library for making HTTP requests
+- Gemini provider needs it to call Google's API
+- Like `fetch()` but with better error handling and timeout support
