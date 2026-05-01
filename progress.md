@@ -454,8 +454,8 @@ Body (JSON):
 | 4 | Update webhook to use AI Service | ✅ Done |
 | 5 | Test with mock provider | ✅ Done |
 | 6 | Install axios | ✅ Done |
-| 7 | Create Gemini provider | ⬜ |
-| 8 | Create AI Health Service | ⬜ |
+| 7 | Create Gemini provider | ✅ Done |
+| 8 | Create AI Health Service | ✅ Done |
 | 9 | Add startup health check in server.js | ⬜ |
 | 10 | Add timeout + fallback to AI Service | ⬜ |
 | 11 | Switch to Gemini and test | ⬜ |
@@ -540,3 +540,62 @@ You never touch webhook code again to switch AI providers!
 - Axios is a library for making HTTP requests
 - Gemini provider needs it to call Google's API
 - Like `fetch()` but with better error handling and timeout support
+
+### Step 7 — Create Gemini Provider ✅
+
+**File created:**
+- `src/providers/gemini.provider.js`
+
+**What it does:**
+1. Takes a prompt string (same input as mockAI)
+2. Sends it to Google's Gemini API via axios POST request
+3. Extracts the reply text from the nested response
+4. Returns the text string (same output as mockAI)
+
+**How the API works:**
+```
+Your prompt → POST to Google → AI processes it → Returns reply
+```
+
+**API URL format:**
+```
+https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=YOUR_KEY
+```
+
+**What was also updated:**
+- `src/services/ai.service.js` — added `gemini: geminiProvider` to the PROVIDERS map
+- Now the AI Service knows how to call Gemini when `.env` says `AI_PROVIDER=gemini`
+
+**Provider pattern:**
+- Both `mockAI(prompt)` and `geminiProvider(prompt)` have the same signature
+- Take a string in, return a string out
+- The AI Service doesn't care which one it calls — they're interchangeable!
+
+### Step 8 — Create AI Health Service ✅
+
+**File created:**
+- `src/services/aiHealth.service.js`
+
+**What it does:**
+- Tests if Gemini is actually working before you rely on it
+- Caches the health result for 60 seconds (avoids spamming Google)
+
+**Two functions:**
+1. `checkGeminiHealth()` — sends "Say OK" to Gemini, returns true/false
+2. `getGeminiHealth()` — returns cached result if fresh, otherwise calls checkGeminiHealth()
+
+**Cache logic:**
+```
+First request (0s)  → calls Gemini → caches: healthy=true
+Next request (10s)  → cache fresh → returns true (no API call!)
+Next request (65s)  → cache expired → calls Gemini again
+```
+
+**Why cache?**
+- Health checks cost an API call each time
+- 100 users in 1 minute = 100 health checks without caching
+- With caching = only 1 health check per minute
+
+**Will be used by:**
+- AI Service (runtime) — check before calling Gemini
+- server.js (startup) — verify Gemini works when server starts

@@ -1,4 +1,5 @@
 import { mockAI } from "../providers/mock.provider.js";
+import { geminiProvider } from "../providers/gemini.provider.js";
 
 /**
  * AI SERVICE (Orchestrator)
@@ -25,8 +26,8 @@ import { mockAI } from "../providers/mock.provider.js";
 
 // Map of provider names to their functions
 const PROVIDERS = {
-  mock: mockAI
-  // gemini: geminiProvider  ← will be added in Step 7
+  mock: mockAI,
+  gemini: geminiProvider
 };
 
 // Friendly message if everything fails
