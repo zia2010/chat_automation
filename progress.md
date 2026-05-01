@@ -437,3 +437,51 @@ Body (JSON):
 ```
 
 **Try sending multiple messages** — the conversation will be saved and loaded each time!
+
+---
+
+## Step 5 — AI Layer Implementation
+
+**Date:** 2026-05-01
+
+### AI Layer Steps Tracker:
+
+| # | Step | Status |
+|---|------|--------|
+| 1 | Create providers folder + move mock AI | ✅ Done |
+| 2 | Add AI_PROVIDER to .env | ✅ Done |
+| 3 | Create AI Service (orchestrator) | ⬜ |
+| 4 | Update webhook to use AI Service | ⬜ |
+| 5 | Test with mock provider | ⬜ |
+| 6 | Install axios | ⬜ |
+| 7 | Create Gemini provider | ⬜ |
+| 8 | Create AI Health Service | ⬜ |
+| 9 | Add startup health check in server.js | ⬜ |
+| 10 | Add timeout + fallback to AI Service | ⬜ |
+| 11 | Switch to Gemini and test | ⬜ |
+
+### Step 1 — Move Mock AI to Providers ✅
+
+**What changed:**
+- Created `src/providers/mock.provider.js` (new location)
+- Updated webhook controller import → `../providers/mock.provider.js`
+- Old `src/services/mockAI.js` can be deleted later
+
+**Why move?**
+- Each AI (mock, Gemini, OpenAI) is a "provider"
+- All providers live in `src/providers/`
+- AI Service picks which one to use
+
+### Step 2 — Add AI_PROVIDER to .env ✅
+
+**Added to `.env`:**
+```
+AI_PROVIDER=mock          # mock | gemini
+NODE_ENV=development
+GEMINI_API_KEY=your_gemini_key
+```
+
+**How it works:**
+- `AI_PROVIDER=mock` → uses fake AI (free, for testing)
+- `AI_PROVIDER=gemini` → uses real Gemini AI (costs money)
+- Switch by changing one line in .env

@@ -1,7 +1,7 @@
 import { getSupabase } from "../db/supabase.js";
 import { hashApiKey } from "../utils/hash.js";
 import { buildPrompt } from "../utils/promptBuilder.js";
-import { mockAI } from "../services/mockAI.js";
+import { mockAI } from "../providers/mock.provider.js";
 import { saveConversation } from "../services/conversation.service.js";
 import { logUsage } from "../services/usage.service.js";
 
