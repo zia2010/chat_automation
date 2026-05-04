@@ -32,7 +32,7 @@ import axios from "axios";
 export const geminiProvider = async (prompt) => {
   // Build the URL — your API key goes in the query string
   // gemini-pro is the model name (Google's text generation model)
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
 
   // Send the prompt to Gemini
   const res = await axios.post(url, {
